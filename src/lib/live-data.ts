@@ -15,6 +15,7 @@ export type Goal = {
   status: "Draft" | "Submitted" | "Approved" | "Returned" | "Locked";
   achStatus: "On Track" | "At Risk" | "Delayed" | "Completed";
   owner?: string;
+  owner_id?: string;
   manager_comment?: string | null;
   dbId: string;
 };
@@ -29,6 +30,7 @@ type GoalRow = {
   status: "draft" | "submitted" | "approved" | "in_progress" | "completed" | "on_hold";
   due_date: string | null;
   manager_comment: string | null;
+  owner_id: string;
 };
 
 type ProfileRow = {
@@ -80,7 +82,7 @@ function toGoal(row: GoalRow): Goal {
         : row.progress >= 30
         ? "At Risk"
         : "Delayed",
-    owner: "Goal owner",
+    owner_id: row.owner_id,
     manager_comment: row.manager_comment,
   };
 }

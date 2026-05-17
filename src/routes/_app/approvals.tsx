@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Panel } from "@/components/ChartCard";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
-import { useLiveGoals } from "@/lib/live-data";
+import { useLiveGoals, useLiveProfiles } from "@/lib/live-data";
 import { Check, X, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -57,6 +57,14 @@ function Approvals() {
       }
     }
   };
+  const profiles = useLiveProfiles();
+
+  const getOwnerName = (ownerId?: string) => {
+    if (!ownerId) return "Unknown";
+    const profile = profiles.find(p => p.id === ownerId);
+    return profile?.full_name || "Unknown";
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -68,7 +76,7 @@ function Approvals() {
           <p className="text-sm text-muted-foreground">No goals pending approval.</p>
         ) : (
           pending.map((g) => (
-            <Panel key={g.id} title={g.title} subtitle={`${g.thrust} · Submitted by ${g.owner}`} action={<StatusBadge status={g.status} />}>
+            <Panel key={g.id} title={g.title} subtitle={`${g.thrust} · Submitted by ${getOwnerName(g.owner_id)}`} action={<StatusBadge status={g.status} />}>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                 <div><p className="text-xs text-muted-foreground">Target</p><p className="font-semibold">{g.target} {g.uom}</p></div>
                 <div><p className="text-xs text-muted-foreground">Weightage</p><p className="font-semibold">{g.weightage}%</p></div>
