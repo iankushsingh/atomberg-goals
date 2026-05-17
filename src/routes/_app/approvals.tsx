@@ -6,18 +6,42 @@ import { useLiveGoals } from "@/lib/live-data";
 import { Check, X, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 
 export const Route = createFileRoute("/_app/approvals")({ component: Approvals });
 function Approvals() {
   const goals = useLiveGoals();
   const pending = goals.filter((g) => g.status === "Submitted" || g.status === "Draft");
 
-  const handleStatusChange = async (id: string, newStatus: string) => {
+  const [returningId, setReturningId] = useState<string | null>(null);
+  const [comment, setComment] = useState("");
+
+  const handleApprove = async (dbId: string) => {
     try {
-      const dbId = id.startsWith("G-") ? goals.find(g => g.id === id)?.id : id; // Hack for mapped IDs if any, actually live-data uses real UUIDs so id is UUID.
-      const { error } = await supabase.from("goals").update({ status: newStatus as any }).eq("id", id);
+      const { error } = await supabase.from("goals").update({ status: "approved" as any, manager_comment: null }).eq("id", dbId);
       if (error) throw error;
-      toast.success(`Goal ${newStatus === "approved" ? "approved" : "returned"}`);
+      toast.success("Goal approved");
+      setTimeout(() => window.location.reload(), 1000);
+    } catch (err: any) {
+      toast.error(err?.message || "Action failed");
+    }
+  };
+
+  const submitReturn = async () => {
+    if (!returningId) return;
+    if (!comment.trim()) { toast.error("Please provide a reason for returning"); return; }
+    try {
+      const { error } = await supabase.from("goals").update({ 
+        status: "draft" as any, 
+        manager_comment: comment 
+      }).eq("id", returningId);
+      if (error) throw error;
+      toast.success("Goal returned to draft");
+      setReturningId(null);
+      setComment("");
       setTimeout(() => window.location.reload(), 1000);
     } catch (err: any) {
       toast.error(err?.message || "Action failed");
@@ -43,14 +67,26 @@ function Approvals() {
               </div>
               <p className="text-sm text-muted-foreground">{g.description}</p>
               <div className="flex gap-2 mt-4">
-                <Button size="sm" className="bg-gradient-primary gap-1.5" onClick={() => handleStatusChange(g.id, "approved")}><Check className="h-3.5 w-3.5" /> Approve</Button>
-                <Button size="sm" variant="outline" className="gap-1.5" onClick={() => handleStatusChange(g.id, "rejected")}><X className="h-3.5 w-3.5" /> Return</Button>
-                <Button size="sm" variant="ghost" className="gap-1.5"><MessageSquare className="h-3.5 w-3.5" /> Comment</Button>
+                <Button size="sm" className="bg-gradient-primary gap-1.5" onClick={() => handleApprove(g.dbId)}><Check className="h-3.5 w-3.5" /> Approve</Button>
+                <Button size="sm" variant="outline" className="gap-1.5" onClick={() => { setReturningId(g.dbId); setComment(""); }}><X className="h-3.5 w-3.5" /> Return</Button>
               </div>
             </Panel>
           ))
         )}
       </div>
+      <Dialog open={!!returningId} onOpenChange={(o) => !o && setReturningId(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Return goal to draft</DialogTitle></DialogHeader>
+          <div className="space-y-2 py-4">
+            <Label>Reason for returning</Label>
+            <Textarea placeholder="Explain what needs to be changed..." value={comment} onChange={(e) => setComment(e.target.value)} rows={4} />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setReturningId(null)}>Cancel</Button>
+            <Button className="bg-gradient-primary" onClick={submitReturn}>Return goal</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

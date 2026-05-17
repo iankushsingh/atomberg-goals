@@ -15,6 +15,8 @@ export type Goal = {
   status: "Draft" | "Submitted" | "Approved" | "Returned" | "Locked";
   achStatus: "On Track" | "At Risk" | "Delayed" | "Completed";
   owner?: string;
+  manager_comment?: string | null;
+  dbId: string;
 };
 
 type GoalRow = {
@@ -26,6 +28,7 @@ type GoalRow = {
   progress: number;
   status: "draft" | "submitted" | "approved" | "in_progress" | "completed" | "on_hold";
   due_date: string | null;
+  manager_comment: string | null;
 };
 
 type ProfileRow = {
@@ -58,6 +61,7 @@ const statusMap: Record<GoalRow["status"], Goal["status"]> = {
 function toGoal(row: GoalRow): Goal {
   return {
     id: `G-${row.id.slice(0, 4).toUpperCase()}`,
+    dbId: row.id,
     thrust: row.category ?? "Business Impact",
     title: row.title,
     description: row.description ?? "",
@@ -77,6 +81,7 @@ function toGoal(row: GoalRow): Goal {
         ? "At Risk"
         : "Delayed",
     owner: "Goal owner",
+    manager_comment: row.manager_comment,
   };
 }
 
@@ -99,7 +104,7 @@ export function useLiveGoals() {
     const load = async () => {
       const { data } = await supabase
         .from("goals")
-        .select("id,title,description,category,weightage,progress,status,due_date")
+        .select("id,title,description,category,weightage,progress,status,due_date,manager_comment")
         .order("created_at", { ascending: false });
       if (mounted && data) setRows((data as unknown as GoalRow[]).map(toGoal));
     };

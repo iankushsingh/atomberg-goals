@@ -133,6 +133,7 @@ export type Database = {
           due_date: string | null
           id: string
           manager_id: string | null
+          manager_comment: string | null
           owner_id: string
           progress: number
           status: Database["public"]["Enums"]["goal_status"]
@@ -148,6 +149,7 @@ export type Database = {
           due_date?: string | null
           id?: string
           manager_id?: string | null
+          manager_comment?: string | null
           owner_id: string
           progress?: number
           status?: Database["public"]["Enums"]["goal_status"]
@@ -163,6 +165,7 @@ export type Database = {
           due_date?: string | null
           id?: string
           manager_id?: string | null
+          manager_comment?: string | null
           owner_id?: string
           progress?: number
           status?: Database["public"]["Enums"]["goal_status"]

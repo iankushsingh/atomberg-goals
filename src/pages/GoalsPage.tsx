@@ -21,10 +21,13 @@ export function GoalsPage() {
   const { user } = useAuth();
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
+  const [editingDbId, setEditingDbId] = useState<string | null>(null);
   const [form, setForm] = useState({
     thrust: "Revenue Growth", title: "", description: "",
     uom: "%", target: 100, weightage: 10, due: "", priority: "Medium" as Goal["priority"],
   });
+
+  const editingGoal = useMemo(() => goals.find((g) => g.dbId === editingDbId), [goals, editingDbId]);
 
   const totalWeight = useMemo(() => goals.reduce((a, g) => a + g.weightage, 0), [goals]);
   const filtered = goals.filter((g) => g.title.toLowerCase().includes(q.toLowerCase()) || g.id.toLowerCase().includes(q.toLowerCase()));
@@ -39,22 +42,34 @@ export function GoalsPage() {
       return;
     }
     
+    const payload = {
+      title: form.title,
+      description: form.description,
+      category: form.thrust,
+      weightage: Number(form.weightage),
+      due_date: form.due || "2026-12-31",
+      status: (status === "Draft" ? "draft" : "submitted") as any,
+    };
+
     try {
-      const { error } = await supabase.from("goals").insert({
-        title: form.title,
-        description: form.description,
-        category: form.thrust,
-        weightage: Number(form.weightage),
-        due_date: form.due || "2026-12-31",
-        status: status === "Draft" ? "draft" : "submitted",
-        progress: 0,
-        owner_id: user?.id || ""
-      });
+      let error;
+      if (editingDbId) {
+        const res = await supabase.from("goals").update(payload).eq("id", editingDbId);
+        error = res.error;
+      } else {
+        const res = await supabase.from("goals").insert({
+          ...payload,
+          progress: 0,
+          owner_id: user?.id || ""
+        });
+        error = res.error;
+      }
 
       if (error) throw error;
 
       toast.success(status === "Draft" ? "Saved as draft" : "Goal submitted for approval");
       setOpen(false);
+      setEditingDbId(null);
       setForm({ ...form, title: "", description: "", weightage: 10 });
       setTimeout(() => window.location.reload(), 1000); // Reload to fetch fresh goals
     } catch (err: any) {
@@ -76,13 +91,25 @@ export function GoalsPage() {
           </div>
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-              <Button className="bg-gradient-primary shadow-elegant gap-2"><Plus className="h-4 w-4" /> New goal</Button>
+              <Button className="bg-gradient-primary shadow-elegant gap-2" onClick={() => {
+                setEditingDbId(null);
+                setForm({ thrust: "Revenue Growth", title: "", description: "", uom: "%", target: 100, weightage: 10, due: "", priority: "Medium" });
+              }}><Plus className="h-4 w-4" /> New goal</Button>
             </DialogTrigger>
             <DialogContent className="max-w-2xl">
               <DialogHeader>
-                <DialogTitle className="flex items-center gap-2"><Sparkles className="h-4 w-4 text-primary" /> Create a new goal</DialogTitle>
+                <DialogTitle className="flex items-center gap-2"><Sparkles className="h-4 w-4 text-primary" /> {editingDbId ? "Edit goal" : "Create a new goal"}</DialogTitle>
               </DialogHeader>
               <div className="grid grid-cols-2 gap-4">
+                {editingGoal?.manager_comment && (
+                  <div className="col-span-2 rounded-lg border border-[oklch(0.65_0.15_320)] bg-[oklch(0.65_0.15_320)]/10 p-3 text-sm text-[oklch(0.65_0.15_320)] flex items-start gap-2">
+                    <AlertCircle className="h-4 w-4 mt-0.5" />
+                    <div>
+                      <p className="font-semibold">Manager Feedback</p>
+                      <p className="mt-0.5">{editingGoal.manager_comment}</p>
+                    </div>
+                  </div>
+                )}
                 <div className="space-y-2 col-span-2">
                   <Label>Goal title</Label>
                   <Input value={form.title} onChange={(e) => setForm({...form, title: e.target.value})} placeholder="e.g. Launch GoalSphere AI Coach" />
@@ -183,7 +210,17 @@ export function GoalsPage() {
               {filtered.map((g) => {
                 const pct = Math.round((g.actual / g.target) * 100);
                 return (
-                  <tr key={g.id} className="border-b border-border/60 last:border-0 hover:bg-accent/30 transition-smooth cursor-pointer">
+                  <tr key={g.id} className="border-b border-border/60 last:border-0 hover:bg-accent/30 transition-smooth cursor-pointer"
+                    onClick={() => {
+                      if (g.status === "Draft") {
+                        setEditingDbId(g.dbId);
+                        setForm({
+                          thrust: g.thrust, title: g.title, description: g.description,
+                          uom: g.uom, target: g.target, weightage: g.weightage, due: g.due, priority: g.priority
+                        });
+                        setOpen(true);
+                      }
+                    }}>
                     <td className="py-3 font-mono text-xs text-muted-foreground">{g.id}</td>
                     <td className="py-3 max-w-md">
                       <p className="text-[11px] text-primary font-medium">{g.thrust}</p>
