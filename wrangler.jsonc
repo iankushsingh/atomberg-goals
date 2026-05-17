@@ -3,13 +3,7 @@
   "name": "atomberg-goals",
   "compatibility_date": "2025-09-24",
   "compatibility_flags": ["nodejs_compat"],
-  "main": "deploy.js",
-  "assets": {
-    "directory": "dist/client"
-  },
-  "build": {
-    "command": "npm run build"
-  },
+  "main": "src/server.ts",
   "vars": {
     "SUPABASE_URL": "https://mhnnwjfbvgatdqvellsj.supabase.co",
     "SUPABASE_PUBLISHABLE_KEY": "sb_publishable_F-XWY8nnuTDDnsJkanYzYg_QjXn-tXb",
