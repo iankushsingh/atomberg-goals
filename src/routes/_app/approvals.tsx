@@ -21,8 +21,9 @@ function Approvals() {
 
   const handleApprove = async (dbId: string) => {
     try {
-      const { error } = await supabase.from("goals").update({ status: "approved" as any, manager_comment: null }).eq("id", dbId);
+      const { data, error } = await supabase.from("goals").update({ status: "approved" as any, manager_comment: null }).eq("id", dbId).select();
       if (error) throw error;
+      if (!data || data.length === 0) throw new Error("Permission Denied: You are not assigned as the manager for this goal.");
       toast.success("Goal approved");
       setTimeout(() => window.location.reload(), 1000);
     } catch (err: any) {
@@ -38,11 +39,12 @@ function Approvals() {
     if (!returningId) return;
     if (!comment.trim()) { toast.error("Please provide a reason for returning"); return; }
     try {
-      const { error } = await supabase.from("goals").update({ 
+      const { data, error } = await supabase.from("goals").update({ 
         status: "draft" as any, 
         manager_comment: comment 
-      }).eq("id", returningId);
+      }).eq("id", returningId).select();
       if (error) throw error;
+      if (!data || data.length === 0) throw new Error("Permission Denied: You are not assigned as the manager for this goal.");
       toast.success("Goal returned to draft");
       setReturningId(null);
       setComment("");
