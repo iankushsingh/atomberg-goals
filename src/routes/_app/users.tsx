@@ -46,7 +46,7 @@ function UsersPage() {
     try {
       const { error } = await supabase
         .from("user_roles")
-        .upsert({ user_id: userId, role: newRole as "employee" | "manager" | "admin" }, { onConflict: "user_id, role" });
+        .upsert({ user_id: userId, role: newRole as "employee" | "manager" | "admin" }, { onConflict: "user_id" });
         
       if (error) throw error;
       toast.success("Role updated");
@@ -118,9 +118,12 @@ function UsersPage() {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="unassigned" className="text-xs text-muted-foreground">Unassigned</SelectItem>
-                          {departments.map(d => (
-                            <SelectItem key={d.id} value={d.id} className="text-xs">{d.name}</SelectItem>
-                          ))}
+                          {departments.map(d => {
+                            const count = profiles.filter(p => p.department_id === d.id).length;
+                            return (
+                              <SelectItem key={d.id} value={d.id} className="text-xs">{d.name} ({count})</SelectItem>
+                            );
+                          })}
                         </SelectContent>
                       </Select>
                     ) : (
