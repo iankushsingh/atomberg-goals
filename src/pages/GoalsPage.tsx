@@ -216,7 +216,7 @@ export function GoalsPage() {
                 return (
                   <tr key={g.id} className="border-b border-border/60 last:border-0 hover:bg-accent/30 transition-smooth cursor-pointer"
                     onClick={() => {
-                      if (g.status === "Draft") {
+                      if (g.status === "Draft" || g.status === "Submitted" || g.status === "Returned") {
                         setEditingDbId(g.dbId);
                         setForm({
                           thrust: g.thrust, title: g.title, description: g.description,
