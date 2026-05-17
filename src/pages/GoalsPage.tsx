@@ -41,8 +41,8 @@ export function GoalsPage() {
     if (!form.title) { toast.error("Goal title is required"); return; }
     if (form.weightage < 10) { toast.error("Minimum weightage is 10%"); return; }
     if (!editingDbId && goals.length >= 8) { toast.error("Maximum 8 goals per cycle"); return; }
-    if (status === "Submitted" && adjustedTotalWeight !== 100) {
-      toast.error(`Total weightage must equal 100% (currently ${adjustedTotalWeight}%)`);
+    if (adjustedTotalWeight > 100) {
+      toast.error(`Total weightage cannot exceed 100% (currently ${adjustedTotalWeight}%)`);
       return;
     }
     
@@ -78,6 +78,20 @@ export function GoalsPage() {
       setTimeout(() => window.location.reload(), 1000); // Reload to fetch fresh goals
     } catch (err: any) {
       toast.error(err?.message || "Failed to create goal");
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!editingDbId) return;
+    if (!confirm("Are you sure you want to delete this goal?")) return;
+    try {
+      const { error } = await supabase.from("goals").delete().eq("id", editingDbId);
+      if (error) throw error;
+      toast.success("Goal deleted successfully");
+      setOpen(false);
+      setEditingDbId(null);
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to delete goal");
     }
   };
 
@@ -167,9 +181,14 @@ export function GoalsPage() {
                   </p>
                 </div>
               </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => submit("Draft")}>Save draft</Button>
-                <Button className="bg-gradient-primary" onClick={() => submit("Submitted")}>Submit for approval</Button>
+              <DialogFooter className="flex justify-between w-full sm:justify-between items-center">
+                {editingDbId ? (
+                  <Button variant="ghost" className="text-destructive hover:bg-destructive/10" onClick={handleDelete}>Delete goal</Button>
+                ) : <div />}
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={() => submit("Draft")}>Save draft</Button>
+                  <Button className="bg-gradient-primary" onClick={() => submit("Submitted")}>Submit for approval</Button>
+                </div>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -216,7 +235,7 @@ export function GoalsPage() {
                 return (
                   <tr key={g.id} className="border-b border-border/60 last:border-0 hover:bg-accent/30 transition-smooth cursor-pointer"
                     onClick={() => {
-                      if (g.status === "Draft" || g.status === "Submitted" || g.status === "Returned") {
+                      if (g.status === "Draft" || g.status === "Submitted" || g.status === "Returned" || g.status === "Approved") {
                         setEditingDbId(g.dbId);
                         setForm({
                           thrust: g.thrust, title: g.title, description: g.description,
