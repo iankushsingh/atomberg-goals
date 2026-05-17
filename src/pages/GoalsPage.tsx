@@ -31,14 +31,18 @@ export function GoalsPage() {
 
   const totalWeight = useMemo(() => goals.reduce((a, g) => a + g.weightage, 0), [goals]);
   const filtered = goals.filter((g) => g.title.toLowerCase().includes(q.toLowerCase()) || g.id.toLowerCase().includes(q.toLowerCase()));
-  const remaining = 100 - totalWeight;
+  const adjustedTotalWeight = useMemo(() => {
+    const currentGoalWeight = editingGoal?.weightage || 0;
+    return totalWeight - currentGoalWeight + form.weightage;
+  }, [totalWeight, editingGoal, form.weightage]);
+  const remaining = 100 - (totalWeight - (editingGoal?.weightage || 0));
 
   const submit = async (status: Goal["status"]) => {
     if (!form.title) { toast.error("Goal title is required"); return; }
     if (form.weightage < 10) { toast.error("Minimum weightage is 10%"); return; }
-    if (goals.length >= 8) { toast.error("Maximum 8 goals per cycle"); return; }
-    if (status === "Submitted" && totalWeight + form.weightage !== 100) {
-      toast.error(`Total weightage must equal 100% (currently ${totalWeight + form.weightage}%)`);
+    if (!editingDbId && goals.length >= 8) { toast.error("Maximum 8 goals per cycle"); return; }
+    if (status === "Submitted" && adjustedTotalWeight !== 100) {
+      toast.error(`Total weightage must equal 100% (currently ${adjustedTotalWeight}%)`);
       return;
     }
     
@@ -152,14 +156,14 @@ export function GoalsPage() {
                 <div className="col-span-2 rounded-xl border border-border p-3 bg-secondary/50">
                   <div className="flex items-center justify-between text-xs mb-2">
                     <span className="text-muted-foreground">Total weightage (incl. this goal)</span>
-                    <span className={cn("font-semibold tabular-nums", totalWeight + form.weightage === 100 ? "text-[oklch(0.55_0.18_155)]" : "text-foreground")}>
-                      {totalWeight + form.weightage}% / 100%
+                    <span className={cn("font-semibold tabular-nums", adjustedTotalWeight === 100 ? "text-[oklch(0.55_0.18_155)]" : "text-foreground")}>
+                      {adjustedTotalWeight}% / 100%
                     </span>
                   </div>
-                  <Progress value={Math.min(100, totalWeight + form.weightage)} className="h-1.5" />
+                  <Progress value={Math.min(100, adjustedTotalWeight)} className="h-1.5" />
                   <p className="text-[11px] text-muted-foreground mt-2 flex items-center gap-1">
-                    {totalWeight + form.weightage === 100 ? <CheckCircle2 className="h-3 w-3 text-[oklch(0.55_0.18_155)]" /> : <AlertCircle className="h-3 w-3" />}
-                    {remaining > 0 ? `${remaining - form.weightage}% remaining after this goal` : "Sheet is balanced"}
+                    {adjustedTotalWeight === 100 ? <CheckCircle2 className="h-3 w-3 text-[oklch(0.55_0.18_155)]" /> : <AlertCircle className="h-3 w-3" />}
+                    {remaining - form.weightage > 0 ? `${remaining - form.weightage}% remaining after this goal` : adjustedTotalWeight > 100 ? `Exceeds by ${adjustedTotalWeight - 100}%` : "Sheet is balanced"}
                   </p>
                 </div>
               </div>

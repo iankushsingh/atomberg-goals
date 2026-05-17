@@ -26,7 +26,11 @@ function Approvals() {
       toast.success("Goal approved");
       setTimeout(() => window.location.reload(), 1000);
     } catch (err: any) {
-      toast.error(err?.message || "Action failed");
+      if (err?.message?.includes("manager_comment")) {
+        toast.error("You must run the SQL script to add the manager_comment column in Supabase first!");
+      } else {
+        toast.error(err?.message || "Action failed");
+      }
     }
   };
 
@@ -44,7 +48,11 @@ function Approvals() {
       setComment("");
       setTimeout(() => window.location.reload(), 1000);
     } catch (err: any) {
-      toast.error(err?.message || "Action failed");
+      if (err?.message?.includes("manager_comment")) {
+        toast.error("You must run the SQL script to add the manager_comment column in Supabase first!");
+      } else {
+        toast.error(err?.message || "Action failed");
+      }
     }
   };
   return (
