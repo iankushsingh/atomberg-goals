@@ -232,20 +232,6 @@ atomberg-goals/
 
 ---
 
-## 🛠 Seeding Departments
-
-Run this SQL in your Supabase SQL Editor to seed the department list:
-
-```sql
--- supabase/seed_departments.sql
-INSERT INTO public.departments (name) VALUES 
-  ('Engineering'), ('Sales'), ('Marketing'), ('Operations'),
-  ('Product'), ('HR'), ('Finance'), ('Legal'),
-  ('Design'), ('Data'), ('Support'), ('Security')
-ON CONFLICT (name) DO NOTHING;
-```
-
----
 
 ## 📜 License
 
