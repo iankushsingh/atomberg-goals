@@ -16,6 +16,7 @@ export type Goal = {
   achStatus: "On Track" | "At Risk" | "Delayed" | "Completed";
   owner?: string;
 };
+
 type GoalRow = {
   id: string;
   title: string;
@@ -67,9 +68,27 @@ function toGoal(row: GoalRow): Goal {
     due: row.due_date ?? "2026-12-31",
     priority: row.weightage >= 20 ? "High" : row.weightage >= 15 ? "Medium" : "Low",
     status: statusMap[row.status] ?? "Draft",
-    achStatus: row.progress >= 90 ? "Completed" : row.progress >= 55 ? "On Track" : row.progress >= 30 ? "At Risk" : "Delayed",
+    achStatus:
+      row.progress >= 90
+        ? "Completed"
+        : row.progress >= 55
+        ? "On Track"
+        : row.progress >= 30
+        ? "At Risk"
+        : "Delayed",
     owner: "Goal owner",
   };
+}
+
+/**
+ * Generate a unique channel name per hook invocation.
+ * This prevents the Supabase error:
+ *   "cannot add postgres_changes callbacks for <channel> after subscribe()"
+ * which occurs when multiple components mount the same hook and share
+ * a static channel name.
+ */
+function uid(prefix: string) {
+  return `${prefix}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
 export function useLiveGoals() {
@@ -87,7 +106,7 @@ export function useLiveGoals() {
 
     void load();
     const channel = supabase
-      .channel("live-goals")
+      .channel(uid("live-goals"))
       .on("postgres_changes", { event: "*", schema: "public", table: "goals" }, () => void load())
       .subscribe();
 
@@ -114,7 +133,7 @@ export function useLiveProfiles() {
     };
     void load();
     const channel = supabase
-      .channel("live-profiles")
+      .channel(uid("live-profiles"))
       .on("postgres_changes", { event: "*", schema: "public", table: "profiles" }, () => void load())
       .subscribe();
     return () => {
@@ -153,9 +172,7 @@ export function useLiveRoles() {
   useEffect(() => {
     let mounted = true;
     const load = async () => {
-      const { data } = await supabase
-        .from("user_roles")
-        .select("user_id, role");
+      const { data } = await supabase.from("user_roles").select("user_id, role");
       if (mounted && data) setRoles(data);
     };
     void load();
@@ -168,16 +185,28 @@ export function useLiveRoles() {
 }
 
 export function useLiveCycles() {
-  const [cycles, setCycles] = useState<{ id: string; name: string; start_date: string; end_date: string; is_active: boolean }[]>([]);
+  const [cycles, setCycles] = useState<
+    { id: string; name: string; start_date: string; end_date: string; is_active: boolean }[]
+  >([]);
 
   useEffect(() => {
     let mounted = true;
     const load = async () => {
-      const { data } = await supabase.from("cycles").select("*").order("start_date", { ascending: false });
+      const { data } = await supabase
+        .from("cycles")
+        .select("*")
+        .order("start_date", { ascending: false });
       if (mounted && data) setCycles(data);
     };
     void load();
-    return () => { mounted = false; };
+    const channel = supabase
+      .channel(uid("live-cycles"))
+      .on("postgres_changes", { event: "*", schema: "public", table: "cycles" }, () => void load())
+      .subscribe();
+    return () => {
+      mounted = false;
+      void supabase.removeChannel(channel);
+    };
   }, []);
 
   return cycles;
@@ -198,7 +227,7 @@ export function useLiveAuditLogs() {
     };
     void load();
     const channel = supabase
-      .channel("live-audit")
+      .channel(uid("live-audit"))
       .on("postgres_changes", { event: "*", schema: "public", table: "audit_logs" }, () => void load())
       .subscribe();
     return () => {
@@ -212,12 +241,17 @@ export function useLiveAuditLogs() {
 
 export function useGoalMetrics(goals: Goal[]) {
   return useMemo(() => {
-    const completion = Math.round(goals.reduce((sum, goal) => sum + (goal.actual / goal.target) * goal.weightage, 0));
+    const total = goals.reduce((sum, g) => sum + g.weightage, 0);
+    const achieved = goals.reduce(
+      (sum, g) => sum + (g.actual / Math.max(1, g.target)) * g.weightage,
+      0
+    );
+    const completion = total > 0 ? Math.round((achieved / total) * 100) : 0;
     return {
       completion,
-      approved: goals.filter((goal) => goal.status === "Approved" || goal.status === "Locked").length,
-      pending: goals.filter((goal) => goal.status === "Submitted" || goal.status === "Draft").length,
-      delayed: goals.filter((goal) => goal.achStatus === "Delayed" || goal.achStatus === "At Risk").length,
+      approved: goals.filter((g) => g.status === "Approved" || g.status === "Locked").length,
+      pending: goals.filter((g) => g.status === "Submitted" || g.status === "Draft").length,
+      delayed: goals.filter((g) => g.achStatus === "Delayed" || g.achStatus === "At Risk").length,
     };
   }, [goals]);
 }
