@@ -70,10 +70,6 @@ AtomQuest is a full-stack, real-time goal management platform designed for enter
 
 ---
 
-## 🏛 Architecture
-
-![AtomQuest Architecture Diagram](docs/architecture.png)
-
 ### Stack Overview
 
 ```
@@ -82,7 +78,7 @@ Backend:    Cloudflare Workers (Edge SSR via @cloudflare/vite-plugin)
 Database:   Supabase (PostgreSQL + Auth + Realtime subscriptions)
 Charts:     Recharts
 Build:      Vite 7 + TypeScript
-CI/CD:      GitHub → Cloudflare Workers (auto-deploy on push to main)
+CI/CD:      GitHub → Cloudflare Workers
 ```
 
 ### Layer Breakdown
@@ -103,7 +99,7 @@ CI/CD:      GitHub → Cloudflare Workers (auto-deploy on push to main)
 │  │  - Handles API routes & auth redirects                 │  │
 │  └────────────────────────────────────────────────────────┘  │
 │                                                              │
-│  ← Auto-deployed from GitHub on every push to `main`        │
+│                                                              │
 └────────────────────────────┬─────────────────────────────────┘
                              │ Supabase JS SDK
 ┌────────────────────────────▼─────────────────────────────────┐
