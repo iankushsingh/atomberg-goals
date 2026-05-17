@@ -1,0 +1,33 @@
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+
+type Theme = "light" | "dark";
+const ThemeCtx = createContext<{ theme: Theme; toggle: () => void }>({
+  theme: "light",
+  toggle: () => {},
+});
+
+export function ThemeProvider({ children }: { children: ReactNode }) {
+  const [theme, setTheme] = useState<Theme>("light");
+
+  useEffect(() => {
+    const stored = (typeof window !== "undefined" && localStorage.getItem("gs-theme")) as Theme | null;
+    const prefers =
+      typeof window !== "undefined" && window.matchMedia?.("(prefers-color-scheme: dark)").matches
+        ? "dark"
+        : "light";
+    const t = stored || prefers;
+    setTheme(t);
+    document.documentElement.classList.toggle("dark", t === "dark");
+  }, []);
+
+  const toggle = () => {
+    const next: Theme = theme === "dark" ? "light" : "dark";
+    setTheme(next);
+    document.documentElement.classList.toggle("dark", next === "dark");
+    localStorage.setItem("gs-theme", next);
+  };
+
+  return <ThemeCtx.Provider value={{ theme, toggle }}>{children}</ThemeCtx.Provider>;
+}
+
+export const useTheme = () => useContext(ThemeCtx);
