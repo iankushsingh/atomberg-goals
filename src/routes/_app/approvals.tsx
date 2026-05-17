@@ -14,7 +14,7 @@ import { Label } from "@/components/ui/label";
 export const Route = createFileRoute("/_app/approvals")({ component: Approvals });
 function Approvals() {
   const goals = useLiveGoals();
-  const pending = goals.filter((g) => g.status === "Submitted" || g.status === "Draft");
+  const pending = goals.filter((g) => g.status === "Submitted");
 
   const [returningId, setReturningId] = useState<string | null>(null);
   const [comment, setComment] = useState("");

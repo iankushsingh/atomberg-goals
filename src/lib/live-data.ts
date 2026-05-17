@@ -102,11 +102,12 @@ export function useLiveGoals() {
   useEffect(() => {
     let mounted = true;
     const load = async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("goals")
-        .select("id,title,description,category,weightage,progress,status,due_date,manager_comment")
+        .select("*")
         .order("created_at", { ascending: false });
       if (mounted && data) setRows((data as unknown as GoalRow[]).map(toGoal));
+      if (error) console.error("Live goals error:", error);
     };
 
     void load();
