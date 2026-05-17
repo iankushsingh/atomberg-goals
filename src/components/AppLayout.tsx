@@ -63,6 +63,9 @@ export function AppLayout() {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  const logs = useLiveAuditLogs();
+  const unread = logs.length;
+
   useEffect(() => {
     if (!loading && (!isAuthed || !user)) {
       nav({ to: "/login", replace: true });
@@ -75,8 +78,6 @@ export function AppLayout() {
   }
 
   const items = NAV[user.role];
-  const logs = useLiveAuditLogs();
-  const unread = logs.length;
 
   return (
     <div className="min-h-screen bg-gradient-subtle text-foreground">
